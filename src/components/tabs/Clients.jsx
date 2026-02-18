@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Plus, TrendingUp } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import AddClientModal from '../AddClientModal'
 
 const HealthScore = ({ score }) => {
   const colors = score >= 80 ? 'text-green-600' : score >= 60 ? 'text-yellow-600' : 'text-red-600'
@@ -10,6 +11,7 @@ const HealthScore = ({ score }) => {
 export default function Clients() {
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
     loadClients()
@@ -28,23 +30,32 @@ export default function Clients() {
     }
   }
 
+  const handleClientAdded = () => {
+    loadClients()
+  }
+
   const totalMRR = clients.reduce((sum, c) => sum + (c.mrr_value || 0), 0)
   const activeCount = clients.length
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Clients</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">{activeCount} active clients • ${totalMRR.toLocaleString()} MRR</p>
         </div>
-        <button className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
+        <button
+          onClick={() => setShowModal(true)}
+          className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition w-full sm:w-auto justify-center sm:justify-start"
+        >
           <Plus size={18} /> Add Client
         </button>
       </div>
 
+      <AddClientModal isOpen={showModal} onClose={() => setShowModal(false)} onClientAdded={handleClientAdded} />
+
       {/* Client Stats */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
           <p className="text-gray-600 dark:text-gray-400 text-sm">Active Clients</p>
           <p className="text-2xl font-bold text-blue-600 mt-1">{activeCount}</p>

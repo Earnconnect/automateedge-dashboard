@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Plus, Download } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { supabase } from '../../lib/supabase'
+import AddFinancialModal from '../AddFinancialModal'
 
 const staticProfitData = [
   { month: 'Jan', revenue: 0, expenses: 2500, profit: -2500 },
@@ -14,6 +15,7 @@ export default function Financial() {
   const [transactions, setTransactions] = useState([])
   const [stats, setStats] = useState({ revenue: 0, expenses: 0, profit: 0, margin: 0 })
   const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
     loadFinancials()
@@ -37,6 +39,10 @@ export default function Financial() {
     }
   }
 
+  const handleFinancialAdded = () => {
+    loadFinancials()
+  }
+
   const totalRevenue = stats.revenue
   const totalExpenses = stats.expenses
   const profit = stats.profit
@@ -50,7 +56,7 @@ export default function Financial() {
       </div>
 
       {/* Financial Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <p className="text-gray-600 dark:text-gray-400 text-sm">Total Revenue (YTD)</p>
           <p className="text-2xl font-bold text-green-600 mt-2">${totalRevenue.toLocaleString()}</p>
@@ -118,12 +124,17 @@ export default function Financial() {
 
       {/* Expense Breakdown */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Expenses</h2>
-          <button className="bg-green-600 hover:bg-green-700 text-white font-medium py-1 px-3 text-sm rounded-lg flex items-center gap-2 transition">
-            <Plus size={16} /> Add Expense
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Transactions</h2>
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-green-600 hover:bg-green-700 text-white font-medium py-1 px-3 text-sm rounded-lg flex items-center gap-2 transition w-full sm:w-auto justify-center sm:justify-start"
+          >
+            <Plus size={16} /> Add
           </button>
         </div>
+
+        <AddFinancialModal isOpen={showModal} onClose={() => setShowModal(false)} onFinancialAdded={handleFinancialAdded} />
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">

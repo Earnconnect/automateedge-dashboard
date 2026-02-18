@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { CheckCircle, Clock, AlertCircle, Plus } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import AddTaskModal from '../AddTaskModal'
 
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -23,6 +24,7 @@ const PriorityBadge = ({ priority }) => {
 export default function Tasks() {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
   
   useEffect(() => {
     loadTasks()
@@ -41,23 +43,32 @@ export default function Tasks() {
     }
   }
 
+  const handleTaskAdded = () => {
+    loadTasks()
+  }
+
   const completed = tasks.filter(t => t.status === 'completed').length
   const inProgress = tasks.filter(t => t.status === 'in-progress').length
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Tasks & Projects</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">{completed} completed • {inProgress} in progress</p>
         </div>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
+        <button
+          onClick={() => setShowModal(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition w-full sm:w-auto justify-center sm:justify-start"
+        >
           <Plus size={18} /> New Task
         </button>
       </div>
 
+      <AddTaskModal isOpen={showModal} onClose={() => setShowModal(false)} onTaskAdded={handleTaskAdded} />
+
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
           <p className="text-gray-600 dark:text-gray-400 text-sm">In Progress</p>
           <p className="text-2xl font-bold text-blue-600 mt-1">{inProgress}</p>
@@ -75,7 +86,7 @@ export default function Tasks() {
       {/* Task List */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-sm sm:text-base">
             <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
               <tr>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Task</th>

@@ -11,15 +11,15 @@ const staticRevenueData = [
 ]
 
 const StatCard = ({ icon: Icon, label, value, change }) => (
-  <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-gray-600 dark:text-gray-400 text-sm">{label}</p>
-        <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
-        {change && <p className="text-xs text-green-600 mt-2">↑ {change}</p>}
+  <div className="bg-white dark:bg-gray-800 rounded-lg p-3 lg:p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+    <div className="flex items-start lg:items-center justify-between gap-2">
+      <div className="flex-1 min-w-0">
+        <p className="text-gray-600 dark:text-gray-400 text-xs lg:text-sm truncate">{label}</p>
+        <p className="text-lg lg:text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
+        {change && <p className="text-xs text-green-600 mt-1 lg:mt-2">↑ {change}</p>}
       </div>
-      <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg">
-        <Icon size={24} className="text-blue-600 dark:text-blue-300" />
+      <div className="bg-blue-100 dark:bg-blue-900 p-2 lg:p-3 rounded-lg flex-shrink-0">
+        <Icon size={18} className="lg:size-6 text-blue-600 dark:text-blue-300" />
       </div>
     </div>
   </div>
@@ -77,7 +77,7 @@ export default function Overview() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
         <StatCard icon={DollarSign} label="Monthly Revenue" value={`$${stats.revenue.toLocaleString()}`} change={loading ? '...' : "Live data"} />
         <StatCard icon={Users} label="Active Clients" value={stats.clients} change={loading ? '...' : "Live"} />
         <StatCard icon={Zap} label="Token Usage" value={`$${stats.tokenCost.toFixed(0)}`} change={loading ? '...' : "YTD"} />
@@ -101,7 +101,7 @@ export default function Overview() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-6">
         <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition">
           + Add New Task
         </button>

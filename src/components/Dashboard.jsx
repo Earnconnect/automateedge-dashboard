@@ -27,7 +27,7 @@ export default function Dashboard({ activeTab }) {
   }
 
   return (
-    <div className="p-8">
+    <div className="lg:ml-64 p-4 lg:p-8 pt-16 lg:pt-8">
       {renderTab()}
     </div>
   )
