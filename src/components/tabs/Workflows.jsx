@@ -1,13 +1,6 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { CheckCircle, AlertCircle, Clock } from 'lucide-react'
-
-const workflows = [
-  { id: 1, name: 'Document Ingestion Pipeline', status: 'running', lastRun: '2026-02-18 11:45', successRate: 98.5, avgDuration: '2.3s' },
-  { id: 2, name: 'RAG Search Indexing', status: 'completed', lastRun: '2026-02-18 10:30', successRate: 100, avgDuration: '15.2s' },
-  { id: 3, name: 'Meeting Transcription & Analysis', status: 'running', lastRun: '2026-02-18 12:00', successRate: 96.2, avgDuration: '45.1s' },
-  { id: 4, name: 'Client Report Generation', status: 'completed', lastRun: '2026-02-17 18:20', successRate: 99.1, avgDuration: '8.5s' },
-  { id: 5, name: 'Email Automation', status: 'idle', lastRun: '2026-02-17 09:00', successRate: 100, avgDuration: '1.2s' },
-]
+import { supabase } from '../../lib/supabase'
 
 const StatusIcon = ({ status }) => {
   if (status === 'running') return <Clock className="text-blue-600" size={20} />
@@ -25,9 +18,29 @@ const StatusBadge = ({ status }) => {
 }
 
 export default function Workflows() {
+  const [workflows, setWorkflows] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadWorkflows()
+  }, [])
+
+  async function loadWorkflows() {
+    try {
+      const { data, error } = await supabase.from('workflows').select('*').order('created_at', { ascending: false })
+      if (!error) {
+        setWorkflows(data || [])
+      }
+    } catch (err) {
+      console.error('Error loading workflows:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const running = workflows.filter(w => w.status === 'running').length
   const completed = workflows.filter(w => w.status === 'completed').length
-  const avgSuccessRate = (workflows.reduce((sum, w) => sum + w.successRate, 0) / workflows.length).toFixed(1)
+  const avgSuccessRate = workflows.length > 0 ? (workflows.reduce((sum, w) => sum + (w.success_rate || 0), 0) / workflows.length).toFixed(1) : 0
 
   return (
     <div className="space-y-8">
@@ -62,42 +75,48 @@ export default function Workflows() {
 
       {/* Workflows List */}
       <div className="space-y-4">
-        {workflows.map((workflow) => (
-          <div key={workflow.id} className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-4 flex-1">
-                <StatusIcon status={workflow.status} />
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{workflow.name}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Last run: {workflow.lastRun} • Avg duration: {workflow.avgDuration}
-                  </p>
+        {loading ? (
+          <div className="text-center text-gray-500">Loading workflows...</div>
+        ) : workflows.length === 0 ? (
+          <div className="text-center text-gray-500">No workflows configured</div>
+        ) : (
+          workflows.map((workflow) => (
+            <div key={workflow.id} className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4 flex-1">
+                  <StatusIcon status={workflow.status} />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{workflow.name}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      Last run: {workflow.last_run ? new Date(workflow.last_run).toLocaleString() : 'Never'} • Avg duration: {workflow.avg_duration}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{workflow.success_rate}%</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Success rate</p>
+                  </div>
+                  <StatusBadge status={workflow.status} />
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{workflow.successRate}%</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Success rate</p>
-                </div>
-                <StatusBadge status={workflow.status} />
-              </div>
-            </div>
 
-            {/* Progress Bar */}
-            <div className="mt-4 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div
-                className={`h-full transition ${
-                  workflow.successRate >= 98
-                    ? 'bg-green-500'
-                    : workflow.successRate >= 95
-                    ? 'bg-yellow-500'
-                    : 'bg-red-500'
-                }`}
-                style={{ width: `${workflow.successRate}%` }}
-              />
+              {/* Progress Bar */}
+              <div className="mt-4 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition ${
+                    workflow.success_rate >= 98
+                      ? 'bg-green-500'
+                      : workflow.success_rate >= 95
+                      ? 'bg-yellow-500'
+                      : 'bg-red-500'
+                  }`}
+                  style={{ width: `${workflow.success_rate}%` }}
+                />
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Error Log */}

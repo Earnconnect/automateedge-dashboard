@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { supabase } from '../../lib/supabase'
 
-const tokenData = [
+const staticTokenData = [
   { day: 'Mon', openai: 120, claude: 95, assemblyai: 45 },
   { day: 'Tue', openai: 140, claude: 110, assemblyai: 50 },
   { day: 'Wed', openai: 130, claude: 105, assemblyai: 48 },
@@ -9,13 +10,42 @@ const tokenData = [
   { day: 'Fri', openai: 160, claude: 130, assemblyai: 60 },
 ]
 
-const costBreakdown = [
-  { name: 'OpenAI', value: 700, color: '#3b82f6' },
-  { name: 'Claude/Anthropic', value: 400, color: '#8b5cf6' },
-  { name: 'AssemblyAI', value: 150, color: '#ec4899' },
-]
-
 export default function Tokens() {
+  const [tokenLogs, setTokenLogs] = useState([])
+  const [costBreakdown, setCostBreakdown] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadTokenData()
+  }, [])
+
+  async function loadTokenData() {
+    try {
+      const { data, error } = await supabase.from('token_logs').select('*').order('date', { ascending: false })
+      if (!error && data) {
+        setTokenLogs(data)
+        
+        // Calculate cost by service
+        const breakdown = {}
+        data.forEach(log => {
+          breakdown[log.service] = (breakdown[log.service] || 0) + log.cost
+        })
+        
+        const colors = { openai: '#3b82f6', claude: '#8b5cf6', assemblyai: '#ec4899' }
+        const costData = Object.entries(breakdown).map(([service, cost]) => ({
+          name: service === 'openai' ? 'OpenAI' : service === 'claude' ? 'Claude/Anthropic' : 'AssemblyAI',
+          value: cost,
+          color: colors[service]
+        }))
+        setCostBreakdown(costData)
+      }
+    } catch (err) {
+      console.error('Error loading token data:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const totalTokenCost = costBreakdown.reduce((sum, item) => sum + item.value, 0)
   const costPerDay = (totalTokenCost / 5).toFixed(2)
   const projectedMonthly = (costPerDay * 30).toFixed(0)
@@ -55,7 +85,7 @@ export default function Tokens() {
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Daily Token Spend</h2>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={tokenData}>
+          <BarChart data={staticTokenData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="day" />
             <YAxis />
@@ -95,23 +125,29 @@ export default function Tokens() {
 
         {/* Service Details */}
         <div className="space-y-3">
-          {costBreakdown.map((service) => (
-            <div key={service.name} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">{service.name}</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    {service.name === 'OpenAI' && '700K tokens'}
-                    {service.name === 'Claude/Anthropic' && '500K tokens'}
-                    {service.name === 'AssemblyAI' && '15 minutes'}
-                  </p>
+          {loading ? (
+            <div className="text-center text-gray-500">Loading...</div>
+          ) : costBreakdown.length === 0 ? (
+            <div className="text-center text-gray-500">No token data</div>
+          ) : (
+            costBreakdown.map((service) => (
+              <div key={service.name} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-white">{service.name}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      {service.name === 'OpenAI' && 'LLM tokens'}
+                      {service.name === 'Claude/Anthropic' && 'LLM tokens'}
+                      {service.name === 'AssemblyAI' && 'Audio minutes'}
+                    </p>
+                  </div>
+                  <span className="text-lg font-bold" style={{ color: service.color }}>
+                    ${service.value.toFixed(0)}
+                  </span>
                 </div>
-                <span className="text-lg font-bold" style={{ color: service.color }}>
-                  ${service.value}
-                </span>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 

@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { TrendingUp, Users, Zap, DollarSign } from 'lucide-react'
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { supabase } from '../../lib/supabase'
 
-const revenueData = [
+const staticRevenueData = [
   { month: 'Jan', revenue: 0, expenses: 2500 },
   { month: 'Feb', revenue: 2499, expenses: 1800 },
   { month: 'Mar', revenue: 4998, expenses: 2200 },
@@ -25,6 +26,49 @@ const StatCard = ({ icon: Icon, label, value, change }) => (
 )
 
 export default function Overview() {
+  const [stats, setStats] = useState({
+    revenue: 0,
+    clients: 0,
+    tokenCost: 0,
+    margin: 0
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadStats()
+  }, [])
+
+  async function loadStats() {
+    try {
+      // Fetch financial data
+      const { data: financials } = await supabase.from('financials').select('*')
+      const revenue = financials?.filter(f => f.type === 'revenue').reduce((sum, f) => sum + f.amount, 0) || 0
+      const expenses = financials?.filter(f => f.type === 'expense').reduce((sum, f) => sum + f.amount, 0) || 0
+      
+      // Fetch clients
+      const { data: clientsData } = await supabase.from('clients').select('*')
+      const activeClients = clientsData?.filter(c => c.status === 'active').length || 0
+      
+      // Fetch token costs
+      const { data: tokens } = await supabase.from('token_logs').select('*')
+      const tokenCost = tokens?.reduce((sum, t) => sum + t.cost, 0) || 0
+      
+      const profit = revenue - expenses
+      const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : 0
+      
+      setStats({
+        revenue,
+        clients: activeClients,
+        tokenCost,
+        margin
+      })
+    } catch (err) {
+      console.error('Error loading stats:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -34,17 +78,17 @@ export default function Overview() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard icon={DollarSign} label="Monthly Revenue" value="$7,497" change="100% vs last month" />
-        <StatCard icon={Users} label="Active Clients" value="3" change="3 new" />
-        <StatCard icon={Zap} label="Token Usage" value="$1,250" change="Moderate" />
-        <StatCard icon={TrendingUp} label="Profit Margin" value="66.7%" change="+5.2%" />
+        <StatCard icon={DollarSign} label="Monthly Revenue" value={`$${stats.revenue.toLocaleString()}`} change={loading ? '...' : "Live data"} />
+        <StatCard icon={Users} label="Active Clients" value={stats.clients} change={loading ? '...' : "Live"} />
+        <StatCard icon={Zap} label="Token Usage" value={`$${stats.tokenCost.toFixed(0)}`} change={loading ? '...' : "YTD"} />
+        <StatCard icon={TrendingUp} label="Profit Margin" value={`${stats.margin}%`} change={loading ? '...' : "Current"} />
       </div>
 
       {/* Revenue Chart */}
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Revenue vs Expenses</h2>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={revenueData}>
+          <BarChart data={staticRevenueData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />

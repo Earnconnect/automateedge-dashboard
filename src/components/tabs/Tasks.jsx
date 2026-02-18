@@ -1,12 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { CheckCircle, Clock, AlertCircle, Plus } from 'lucide-react'
-
-const initialTasks = [
-  { id: 1, title: 'Lodigi RAG Implementation', status: 'in-progress', priority: 'high', dueDate: '2026-02-25' },
-  { id: 2, title: 'MeetingMind Slack Integration', status: 'in-progress', priority: 'high', dueDate: '2026-02-28' },
-  { id: 3, title: 'Client Onboarding Doc', status: 'pending', priority: 'medium', dueDate: '2026-02-20' },
-  { id: 4, title: 'Token Usage Optimization', status: 'completed', priority: 'medium', dueDate: '2026-02-15' },
-]
+import { supabase } from '../../lib/supabase'
 
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -27,7 +21,26 @@ const PriorityBadge = ({ priority }) => {
 }
 
 export default function Tasks() {
-  const [tasks, setTasks] = useState(initialTasks)
+  const [tasks, setTasks] = useState([])
+  const [loading, setLoading] = useState(true)
+  
+  useEffect(() => {
+    loadTasks()
+  }, [])
+
+  async function loadTasks() {
+    try {
+      const { data, error } = await supabase.from('tasks').select('*').order('created_at', { ascending: false })
+      if (!error) {
+        setTasks(data || [])
+      }
+    } catch (err) {
+      console.error('Error loading tasks:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const completed = tasks.filter(t => t.status === 'completed').length
   const inProgress = tasks.filter(t => t.status === 'in-progress').length
 
@@ -72,14 +85,20 @@ export default function Tasks() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {tasks.map((task) => (
-                <tr key={task.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                  <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{task.title}</td>
-                  <td className="px-6 py-4"><StatusBadge status={task.status} /></td>
-                  <td className="px-6 py-4"><PriorityBadge priority={task.priority} /></td>
-                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{task.dueDate}</td>
-                </tr>
-              ))}
+              {loading ? (
+                <tr><td colSpan="4" className="px-6 py-4 text-center text-gray-500">Loading tasks...</td></tr>
+              ) : tasks.length === 0 ? (
+                <tr><td colSpan="4" className="px-6 py-4 text-center text-gray-500">No tasks yet</td></tr>
+              ) : (
+                tasks.map((task) => (
+                  <tr key={task.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{task.title}</td>
+                    <td className="px-6 py-4"><StatusBadge status={task.status} /></td>
+                    <td className="px-6 py-4"><PriorityBadge priority={task.priority} /></td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{task.due_date}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -1,0 +1,46 @@
+redirectsOrigin = "config"
+plugins = []
+functionsDirectory = "/data/.openclaw/workspace/automateedge-dashboard/netlify/functions"
+functionsDirectoryOrigin = "config-v1"
+headers = []
+
+[dev]
+command = "npm run dev"
+port = 3000.0
+
+[functions]
+
+[functions."*"]
+
+[build]
+publish = "/data/.openclaw/workspace/automateedge-dashboard/dist"
+publishOrigin = "config"
+commandOrigin = "config"
+command = "npm run build"
+functions = "/data/.openclaw/workspace/automateedge-dashboard/netlify/functions"
+
+[build.environment]
+
+[build.processing]
+
+[build.processing.css]
+
+[build.processing.html]
+
+[build.processing.images]
+
+[build.processing.js]
+
+[build.services]
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200.0
+force = false
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]

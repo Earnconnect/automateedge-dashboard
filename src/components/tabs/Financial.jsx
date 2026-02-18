@@ -1,27 +1,46 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Plus, Download } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { supabase } from '../../lib/supabase'
 
-const profitData = [
+const staticProfitData = [
   { month: 'Jan', revenue: 0, expenses: 2500, profit: -2500 },
   { month: 'Feb', revenue: 2499, expenses: 1800, profit: 699 },
   { month: 'Mar', revenue: 4998, expenses: 2200, profit: 2798 },
   { month: 'Apr', revenue: 7497, expenses: 2500, profit: 4997 },
 ]
 
-const expenses = [
-  { id: 1, category: 'API Costs (OpenAI)', amount: 850, date: '2026-02-15' },
-  { id: 2, category: 'Hosting & Infrastructure', amount: 500, date: '2026-02-15' },
-  { id: 3, category: 'Software Licenses', amount: 300, date: '2026-02-10' },
-  { id: 4, category: 'Miscellaneous', amount: 350, date: '2026-02-05' },
-]
-
 export default function Financial() {
-  const totalRevenue = 7497
-  const totalExpenses = 2500
-  const profit = totalRevenue - totalExpenses
-  const margin = ((profit / totalRevenue) * 100).toFixed(1)
-  const [transactions, setTransactions] = useState(expenses)
+  const [transactions, setTransactions] = useState([])
+  const [stats, setStats] = useState({ revenue: 0, expenses: 0, profit: 0, margin: 0 })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadFinancials()
+  }, [])
+
+  async function loadFinancials() {
+    try {
+      const { data, error } = await supabase.from('financials').select('*').order('date', { ascending: false })
+      if (!error && data) {
+        setTransactions(data)
+        const revenue = data.filter(f => f.type === 'revenue').reduce((sum, f) => sum + f.amount, 0)
+        const expenses = data.filter(f => f.type === 'expense').reduce((sum, f) => sum + f.amount, 0)
+        const profit = revenue - expenses
+        const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : 0
+        setStats({ revenue, expenses, profit, margin })
+      }
+    } catch (err) {
+      console.error('Error loading financials:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const totalRevenue = stats.revenue
+  const totalExpenses = stats.expenses
+  const profit = stats.profit
+  const margin = stats.margin
 
   return (
     <div className="space-y-8">
@@ -58,7 +77,7 @@ export default function Financial() {
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Profitability Trend</h2>
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={profitData}>
+          <LineChart data={staticProfitData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />
@@ -115,13 +134,19 @@ export default function Financial() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {transactions.map((tx) => (
-                <tr key={tx.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                  <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{tx.category}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">${tx.amount}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{tx.date}</td>
-                </tr>
-              ))}
+              {loading ? (
+                <tr><td colSpan="3" className="px-6 py-4 text-center text-gray-500">Loading...</td></tr>
+              ) : transactions.length === 0 ? (
+                <tr><td colSpan="3" className="px-6 py-4 text-center text-gray-500">No transactions</td></tr>
+              ) : (
+                transactions.map((tx) => (
+                  <tr key={tx.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{tx.category}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">${tx.amount}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{tx.date}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
